@@ -220,9 +220,16 @@ function initViewportFit() {
 function initServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is a bonus, not a requirement */ });
-  });
+  const register = () => {
+    navigator.serviceWorker.register('sw.js')
+      .catch((err) => console.warn('Service worker registration failed (offline support disabled):', err));
+  };
+  // boot() has already awaited several async steps (loading entries, checking
+  // for a PIN) by the time this runs, so the page's 'load' event may well have
+  // already fired — waiting for an event that already happened means this
+  // never registers. Register immediately if that's already the case.
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
 }
 
 /* ── Boot ──────────────────────────────────────────────────────────────── */
