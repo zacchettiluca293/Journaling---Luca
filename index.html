@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Journal</title>
+<meta name="description" content="A private, local-first journal.">
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FBF7F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16130F" media="(prefers-color-scheme: dark)">
+
+<!-- iOS home-screen behaviour -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Journal">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- Shown only when the app is opened the wrong way (double-clicked from Finder). -->
+<div id="boot-error" class="boot-error" hidden>
+  <div class="boot-error__card">
+    <h1>Almost there</h1>
+    <p>This app needs to be served by a web address, not opened straight from a folder.</p>
+    <p><strong>To try it on this Mac:</strong> open Terminal, then run:</p>
+    <pre>cd "<span id="boot-path">…</span>"
+python3 -m http.server 8080</pre>
+    <p>Then visit <strong>http://localhost:8080</strong> in your browser.</p>
+    <p class="boot-error__muted">On your phone, use the deployed web address instead — see README.</p>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Lock screen ───────────────────────────── -->
+<div id="lock" class="lock" hidden>
+  <div class="lock__inner">
+    <div class="lock__mark" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+    <h1 class="lock__title" id="lock-title">Enter your PIN</h1>
+    <p class="lock__hint" id="lock-hint">Four digits.</p>
+
+    <div class="pin-dots" id="pin-dots" role="status" aria-live="polite" aria-label="PIN entry">
+      <i></i><i></i><i></i><i></i>
+    </div>
+
+    <div class="keypad" id="keypad">
+      <button type="button" class="key" data-key="1">1</button>
+      <button type="button" class="key" data-key="2">2</button>
+      <button type="button" class="key" data-key="3">3</button>
+      <button type="button" class="key" data-key="4">4</button>
+      <button type="button" class="key" data-key="5">5</button>
+      <button type="button" class="key" data-key="6">6</button>
+      <button type="button" class="key" data-key="7">7</button>
+      <button type="button" class="key" data-key="8">8</button>
+      <button type="button" class="key" data-key="9">9</button>
+      <button type="button" class="key key--ghost" data-key="cancel" id="key-cancel"></button>
+      <button type="button" class="key" data-key="0">0</button>
+      <button type="button" class="key key--ghost" data-key="del" aria-label="Delete">
+        <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7z"/><path d="m12 10 5 4m0-4-5 4"/></svg>
+      </button>
+    </div>
+
+    <button type="button" class="lock__forgot" id="lock-forgot" hidden>Forgot your PIN?</button>
+  </div>
+</div>
+
+<!-- ───────────────────────────────  App  ───────────────────────────────── -->
+<div id="app" class="app" hidden>
+
+  <!-- ══ Feed ══ -->
+  <section class="view view--feed" id="view-feed">
+    <header class="topbar">
+      <div class="topbar__text">
+        <h1 class="topbar__title">Journal</h1>
+        <p class="topbar__sub" id="feed-stats"></p>
+      </div>
+      <button type="button" class="iconbtn" id="btn-lock" aria-label="Lock the journal">
+        <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      </button>
+    </header>
+
+    <div class="scroll" id="feed-scroll">
+      <div class="feed" id="feed-list"></div>
+      <div class="empty" id="feed-empty" hidden>
+        <p class="empty__lead">Nothing here yet.</p>
+        <p>Write whatever's in your head — a line, a list, a half-thought. It stays on this phone.</p>
+      </div>
+    </div>
+
+    <div class="composer" id="composer">
+      <div class="composer__live" id="composer-live" hidden>
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span id="composer-live-text">Listening…</span>
+        <button type="button" class="composer__stop" id="btn-stop-rec">Stop</button>
+      </div>
+      <div class="composer__hint" id="composer-hint" hidden></div>
+      <div class="composer__row">
+        <textarea id="composer-input" class="composer__input" rows="1"
+                  placeholder="What's on your mind?"
+                  enterkeyhint="enter" autocapitalize="sentences" autocorrect="on"></textarea>
+        <button type="button" class="composer__btn composer__btn--mic" id="btn-mic" aria-label="Voice input">
+          <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </button>
+        <button type="button" class="composer__btn composer__btn--send" id="btn-send" aria-label="Save entry" disabled>
+          <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M4 12h15"/><path d="m13 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Vault ══ -->
+  <section class="view view--vault" id="view-vault" hidden>
+    <header class="topbar">
+      <div class="topbar__text">
+        <h1 class="topbar__title">Vault</h1>
+        <p class="topbar__sub" id="vault-stats"></p>
+      </div>
+      <button type="button" class="iconbtn" id="btn-settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10-1.4 1.4"/></svg>
+      </button>
+    </header>
+
+    <div class="scroll" id="vault-scroll">
+      <div class="searchwrap">
+        <svg viewBox="0 0 24 24" class="ico searchwrap__ico" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+        <input type="search" id="vault-search" class="searchwrap__input" placeholder="Search your entries" autocapitalize="none" autocorrect="off">
+        <button type="button" class="searchwrap__clear" id="vault-search-clear" hidden aria-label="Clear search">
+          <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div id="vault-search-results" hidden></div>
+
+      <div id="vault-default">
+        <div id="vault-quiet"></div>
+        <div id="vault-digests"></div>
+        <div id="vault-browse"></div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabbar" id="tabbar">
+    <button type="button" class="tab is-active" data-view="feed">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3.2-6.4"/><path d="M8 10h7M8 14h5"/></svg>
+      <span>Feed</span>
+    </button>
+    <button type="button" class="tab" data-view="vault">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg>
+      <span>Vault</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ─────────────────────── Overlays: sheet / panel ─────────────────────── -->
+<div id="scrim" class="scrim" hidden></div>
+
+<div id="sheet" class="sheet" role="dialog" aria-modal="true" hidden>
+  <div class="sheet__grab" aria-hidden="true"></div>
+  <header class="sheet__head">
+    <h2 id="sheet-title" class="sheet__title"></h2>
+    <button type="button" class="iconbtn" id="sheet-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="sheet__body" id="sheet-body"></div>
+</div>
+
+<div id="panel" class="panel" role="dialog" aria-modal="true" hidden>
+  <header class="topbar topbar--panel">
+    <button type="button" class="iconbtn" id="panel-back" aria-label="Back">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+    </button>
+    <div class="topbar__text">
+      <h1 class="topbar__title" id="panel-title"></h1>
+      <p class="topbar__sub" id="panel-sub"></p>
+    </div>
+    <button type="button" class="iconbtn" id="panel-copy" aria-label="Copy for AI">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>
+    </button>
+  </header>
+  <div class="scroll" id="panel-body"></div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+  // Guard: opening index.html straight from Finder gives a file:// URL, where
+  // modules and storage are blocked. Show instructions instead of a blank page.
+  if (location.protocol === 'file:') {
+    var el = document.getElementById('boot-error');
+    el.hidden = false;
+    var path = decodeURIComponent(location.pathname).replace(/\/index\.html$/, '');
+    document.getElementById('boot-path').textContent = path;
+  }
+</script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
