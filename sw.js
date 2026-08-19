@@ -7,7 +7,7 @@
  * Bump CACHE when you change any file, so phones drop the stale copy.
  */
 
-const CACHE = 'journal-v6';
+const CACHE = 'journal-v7';
 
 const SHELL = [
   './',
@@ -49,7 +49,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/** Give up on the network after a moment and use what we already have. */
+/**
+ * Give up on the network after a moment and use what we already have.
+ *
+ * `cache: 'reload'` matters more than it looks: GitHub Pages serves these
+ * files with `Cache-Control: max-age=600`, so a plain fetch is answered from
+ * the browser's own HTTP cache and can hand back a ten-minute-old copy. That
+ * defeats the whole point of going to the network first — a fix would appear
+ * not to have shipped for ten minutes after every deploy. This forces a real
+ * request and refreshes the HTTP cache with what comes back.
+ */
 function fetchWithTimeout(request, ms) {
   return new Promise((resolve, reject) => {
     const controller = new AbortController();
@@ -57,7 +66,7 @@ function fetchWithTimeout(request, ms) {
       controller.abort();
       reject(new Error('timeout'));
     }, ms);
-    fetch(request, { signal: controller.signal })
+    fetch(request, { signal: controller.signal, cache: 'reload' })
       .then((response) => { clearTimeout(timer); resolve(response); })
       .catch((err) => { clearTimeout(timer); reject(err); });
   });
