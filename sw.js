@@ -1,13 +1,13 @@
 /* Offline support.
  *
  * The whole app is a handful of static files, so we cache them all on install
- * and serve from the cache first. Nothing here touches journal data — entries
- * live in IndexedDB and never pass through the network.
+ * and keep that copy as the offline fallback. Nothing here touches journal
+ * data — entries live in IndexedDB and never pass through the network.
  *
- * Bump CACHE when you change any file, so phones pick up the new version.
+ * Bump CACHE when you change any file, so phones drop the stale copy.
  */
 
-const CACHE = 'journal-v4';
+const CACHE = 'journal-v5';
 
 const SHELL = [
   './',
@@ -49,31 +49,51 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/** Give up on the network after a moment and use what we already have. */
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('timeout'));
+    }, ms);
+    fetch(request, { signal: controller.signal })
+      .then((response) => { clearTimeout(timer); resolve(response); })
+      .catch((err) => { clearTimeout(timer); reject(err); });
+  });
+}
+
+/*
+ * Network first, cache as the safety net.
+ *
+ * The obvious alternative — serve the cache instantly and refresh in the
+ * background — means every fix lands one launch late: you open the app, still
+ * see the old version, and only get the new one next time. For an app that is
+ * updated in response to your feedback, that is the wrong trade. These files
+ * total well under a megabyte, so fetching them fresh costs very little, and
+ * anything slower than three seconds (or offline entirely) falls straight back
+ * to the cached copy.
+ */
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   if (new URL(request.url).origin !== self.location.origin) return;
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        // Refresh in the background so the next launch is up to date.
-        fetch(request)
-          .then((response) => {
-            if (response && response.ok) caches.open(CACHE).then((c) => c.put(request, response));
-          })
-          .catch(() => { /* offline: the cached copy is what we have */ });
-        return cached;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const fresh = await fetchWithTimeout(request, 3000);
+      if (fresh && fresh.ok) cache.put(request, fresh.clone());
+      return fresh;
+    } catch {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      // A navigation with nothing cached for that exact URL still gets the app.
+      if (request.mode === 'navigate') {
+        const shell = await cache.match('./index.html');
+        if (shell) return shell;
       }
-      return fetch(request)
-        .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match('./index.html'));
-    }),
-  );
+      return Response.error();
+    }
+  })());
 });
