@@ -4,6 +4,11 @@
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+/** "1 entry" / "2 entries" — counts read as sloppy when the plural is wrong. */
+export function plural(count, singular, pluralForm = `${singular}s`) {
+  return `${count.toLocaleString()} ${count === 1 ? singular : pluralForm}`;
+}
+
 /** Terse element builder: h('div', { class: 'card' }, 'text', childEl). */
 export function h(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);

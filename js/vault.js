@@ -4,7 +4,7 @@ import * as store from './store.js';
 import * as analysis from './analysis.js';
 import * as T from './time.js';
 import * as fmt from './format.js';
-import { $, h, icon, ICONS, toast, openPanel, openSheet, closeSheet, highlight } from './ui.js';
+import { $, h, icon, ICONS, toast, openPanel, openSheet, closeSheet, highlight, plural } from './ui.js';
 import { openEntryActions } from './feed.js';
 
 let digestKind = 'week';
@@ -341,9 +341,9 @@ function digestNode(digest, slice) {
   }
 
   const lead = [
-    `${s.entries} ${s.entries === 1 ? 'entry' : 'entries'}`,
-    `${s.words.toLocaleString()} words`,
-    `written on ${s.daysWritten} of ${s.periodDays} days`,
+    plural(s.entries, 'entry', 'entries'),
+    plural(s.words, 'word'),
+    `written on ${s.daysWritten} of ${plural(s.periodDays, 'day')}`,
   ].join(', ');
   wrap.append(h('p', { class: 'digest__lead', text: `${lead}.` }));
 
@@ -493,7 +493,7 @@ export function renderVault() {
 
   const s = store.stats();
   $('#vault-stats').textContent = s.entries
-    ? `${s.entries} entries · ${s.words.toLocaleString()} words · ${s.days} days`
+    ? `${plural(s.entries, 'entry', 'entries')} · ${plural(s.words, 'word')} · ${plural(s.days, 'day')}`
     : 'Nothing saved yet';
 }
 

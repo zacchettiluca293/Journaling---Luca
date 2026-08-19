@@ -6,7 +6,7 @@ import * as pin from './pin.js';
 import * as fmt from './format.js';
 import * as speech from './speech.js';
 import * as T from './time.js';
-import { $, h, icon, ICONS, toast, openSheet, closeSheet, confirmSheet } from './ui.js';
+import { $, h, icon, ICONS, toast, openSheet, closeSheet, confirmSheet, plural } from './ui.js';
 
 let requestPinChange = null; // set by app.js so settings can hand control back
 
@@ -141,7 +141,7 @@ export function openBackup() {
       if (result === 'shared' || result === 'downloaded') toast('Backup saved');
       else if (result === 'cancelled') toast('Backup cancelled');
       else toast('Could not save the file — try copying it instead');
-    } }, icon(ICONS.down, 20), h('span', {}, h('span', { text: 'Save a backup file' }), h('small', { text: `${stats.entries} entries · goes to Files, Drive, wherever you like` }))));
+    } }, icon(ICONS.down, 20), h('span', {}, h('span', { text: 'Save a backup file' }), h('small', { text: `${plural(stats.entries, 'entry', 'entries')} · goes to Files, Drive, wherever you like` }))));
 
     menu.append(h('button', { type: 'button', onclick: async () => {
       const text = fmt.backupJson(store.all(), { entryCount: stats.entries });

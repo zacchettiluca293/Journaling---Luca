@@ -86,6 +86,21 @@
 
 * { box-sizing: border-box; }
 
+/* No accidental zoom.
+ *
+ * iOS ignores `user-scalable=no` in the viewport tag, so this is the only
+ * thing that actually stops double-tap-to-zoom on an iPhone. It has to be on
+ * everything, not just buttons: the keypad keys are circles, so a thumb that
+ * lands a few pixels off centre hits the container behind them — and a couple
+ * of those in quick succession while typing a PIN reads as a zoom gesture.
+ *
+ * `manipulation` still permits deliberate pinch-to-zoom and all scrolling; it
+ * only removes the double-tap shortcut (and the legacy 300ms tap delay). */
+html, body, * { touch-action: manipulation; }
+
+/* Keeps iOS from inflating text on rotation. */
+html { -webkit-text-size-adjust: 100%; }
+
 /* The app shows and hides whole surfaces with the `hidden` attribute, and
    several of them set `display` in a class. Make `hidden` always win. */
 [hidden] { display: none !important; }
@@ -112,9 +127,7 @@ button, input, textarea, select {
   color: inherit;
 }
 
-/* Stops iOS reading a fast repeat tap (e.g. two of the same PIN digit) as a
-   double-tap-to-zoom gesture, and removes the ~300ms tap delay besides. */
-button { cursor: pointer; touch-action: manipulation; }
+button { cursor: pointer; }
 
 h1, h2, h3, p { margin: 0; }
 
@@ -872,7 +885,9 @@ button.row:active { background: var(--surface-2); }
   background: var(--bg);
   padding: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .78rem;
+  /* Must stay at or above 16px: iOS zooms the whole page when you focus a
+     text field with smaller text, which is jarring inside a sheet. */
+  font-size: 1rem;
   line-height: 1.5;
   white-space: pre;
   overflow: auto;
