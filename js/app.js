@@ -199,6 +199,25 @@ function initTabs() {
   });
 }
 
+/* ── No zoom ───────────────────────────────────────────────────────────── */
+
+/*
+ * iOS ignores `user-scalable=no`, and `touch-action: manipulation` only ever
+ * covered the double-tap shortcut — pinch was never blocked by either. These
+ * WebKit gesture events are the only thing that actually stops a pinch on an
+ * iPhone, which is what a stray second finger triggers while thumb-typing.
+ */
+function initZoomGuard() {
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((type) => {
+    document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
+  });
+  // Belt and braces: a second finger landing during a drag can still begin a
+  // zoom. Single-finger scrolling is untouched.
+  document.addEventListener('touchmove', (event) => {
+    if (event.touches.length > 1) event.preventDefault();
+  }, { passive: false });
+}
+
 /* ── Keyboard-aware layout (iOS) ───────────────────────────────────────── */
 
 function initViewportFit() {
@@ -206,6 +225,11 @@ function initViewportFit() {
   if (!vv) return;
   const app = $('#app');
   const fit = () => {
+    // While the page is zoomed, the visual viewport is a small window onto a
+    // much larger layout. Resizing the app to match it reflows everything into
+    // the wrong shape — the distortion that shows up on top of the zoom itself.
+    // Leave the layout alone until the scale is back to normal.
+    if (typeof vv.scale === 'number' && Math.abs(vv.scale - 1) > 0.01) return;
     app.style.top = `${vv.offsetTop}px`;
     app.style.bottom = 'auto';
     app.style.height = `${vv.height}px`;
@@ -258,6 +282,10 @@ async function boot() {
 
   initServiceWorker();
 }
+
+// Before boot(), which awaits the database — zoom must be blocked from the
+// very first paint, not once startup finishes.
+initZoomGuard();
 
 if (location.protocol !== 'file:') {
   boot().catch((err) => {

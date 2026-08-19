@@ -2,10 +2,11 @@
 <html lang="en" data-theme="auto">
 <head>
 <meta charset="utf-8">
-<!-- No maximum-scale/user-scalable here: iOS ignores both, and on other
-     platforms they block deliberate pinch-zoom for anyone who needs it.
-     Accidental double-tap zoom is handled properly in CSS via touch-action. -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<!-- Zoom is switched off in three places because no single one covers iOS:
+     these attributes (honoured everywhere except iOS), touch-action in the
+     CSS (double-tap), and the gesture handlers in js/app.js (pinch, and the
+     only thing that works on an iPhone). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Journal</title>
 <meta name="description" content="A private, local-first journal.">
 
