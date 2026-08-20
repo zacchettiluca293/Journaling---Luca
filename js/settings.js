@@ -232,6 +232,14 @@ async function openAbout() {
   const persisted = await db.requestPersistence();
   const stats = store.stats();
 
+  // The offline cache is named after the build, so it doubles as a version
+  // stamp without anything needing to be kept in sync by hand.
+  let build = 'not cached yet';
+  try {
+    const keys = await caches.keys();
+    build = keys.find((k) => k.startsWith('journal-')) || build;
+  } catch { /* caches unavailable — leave the default */ }
+
   openSheet('Where your journal lives', (body) => {
     body.append(h('p', { class: 'note', html: `
       Everything you write is stored in this browser's own database on this device.
@@ -255,6 +263,11 @@ async function openAbout() {
     if (usage !== null) line('Space used', `${(usage / 1048576).toFixed(1)} MB`);
     line('Storage', db.isFallback() ? 'Simple (fallback)' : 'IndexedDB');
     line('Protected from cleanup', persisted ? 'Yes' : 'Not granted');
+    // Which copy of the app is this, and which build? Two installs from
+    // different addresses look identical but hold separate journals and can
+    // be running different code — worth being able to check at a glance.
+    line('Served from', location.host);
+    line('Build', build);
     body.append(facts);
 
     if (speech.isIOS() && !speech.isStandalone()) {
