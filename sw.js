@@ -7,7 +7,7 @@
  * Bump CACHE when you change any file, so phones drop the stale copy.
  */
 
-const CACHE = 'journal-v7';
+const CACHE = 'journal-v8';
 
 const SHELL = [
   './',

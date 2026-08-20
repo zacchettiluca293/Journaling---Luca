@@ -86,17 +86,23 @@
 
 * { box-sizing: border-box; }
 
-/* No accidental zoom.
+/* No zoom, of any kind.
  *
- * iOS ignores `user-scalable=no` in the viewport tag, so this is the only
- * thing that actually stops double-tap-to-zoom on an iPhone. It has to be on
- * everything, not just buttons: the keypad keys are circles, so a thumb that
- * lands a few pixels off centre hits the container behind them — and a couple
- * of those in quick succession while typing a PIN reads as a zoom gesture.
+ * The value matters, and it is easy to get wrong: `manipulation` means
+ * "pan-x pan-y pinch-zoom" — it permits pinch zoom and only removes the
+ * double-tap shortcut. Listing the pans explicitly, without `pinch-zoom`,
+ * is what actually disables pinching, and it takes double-tap with it.
+ * Scrolling in both directions is unaffected.
  *
- * `manipulation` still permits deliberate pinch-to-zoom and all scrolling; it
- * only removes the double-tap shortcut (and the legacy 300ms tap delay). */
-html, body, * { touch-action: manipulation; }
+ * This has to be on everything rather than just buttons: the keypad keys are
+ * circles, so a thumb landing a few pixels off centre hits the container
+ * behind them, and that container needs the same rule. */
+html, body, * { touch-action: pan-x pan-y; }
+
+/* The lock screen scrolls nowhere, so it can refuse every browser gesture
+   outright — the strictest setting available, on the screen where the
+   zooming actually happened. */
+.lock, .lock * { touch-action: none; }
 
 /* Keeps iOS from inflating text on rotation. */
 html { -webkit-text-size-adjust: 100%; }
